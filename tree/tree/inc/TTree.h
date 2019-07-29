@@ -44,6 +44,32 @@
 #include <array>
 #include <atomic>
 
+#include <TStopwatch.h>
+#include <chrono>
+#include <iostream>
+class CumulativeStopwatch {
+   std::string name;
+   unsigned int recurse_count = 0;
+   std::chrono::high_resolution_clock clock;
+   std::chrono::high_resolution_clock::time_point last_start;
+   std::chrono::high_resolution_clock::duration duration;
+
+public:
+   CumulativeStopwatch(const std::string &_name) : name(_name) {}
+   ~CumulativeStopwatch() { std::cout << name << ": " << duration.count() << " ns" << std::endl; }
+
+   void Start() { if (++recurse_count == 1) last_start = clock.now(); }
+   void Stop() { if (--recurse_count == 0) duration += clock.now() - last_start; }
+};
+
+class CumulativeSWStartStopper
+{
+   CumulativeStopwatch &sw;
+
+   public:
+   CumulativeSWStartStopper(CumulativeStopwatch &_sw) : sw(_sw) { sw.Start(); }
+   ~CumulativeSWStartStopper() { sw.Stop(); }
+};
 
 class TBranch;
 class TBrowser;
