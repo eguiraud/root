@@ -3256,8 +3256,13 @@ TH1* TH1::FFT(TH1* h_output, Option_t *option)
 ///
 /// The function returns the corresponding bin number which has its content incremented by 1
 
+#include <TTree.h>
+
 Int_t TH1::Fill(Double_t x)
 {
+   static CumulativeStopwatch sw("TH1::Fill1");
+   CumulativeSWStartStopper swss(sw);
+
    if (fBuffer)  return BufferFill(x,1);
 
    Int_t bin;
@@ -3290,6 +3295,8 @@ Int_t TH1::Fill(Double_t x)
 
 Int_t TH1::Fill(Double_t x, Double_t w)
 {
+   static CumulativeStopwatch sw("TH1::Fill2");
+   CumulativeSWStartStopper swss(sw);
 
    if (fBuffer) return BufferFill(x,w);
 
@@ -3326,6 +3333,9 @@ Int_t TH1::Fill(Double_t x, Double_t w)
 
 Int_t TH1::Fill(const char *namex, Double_t w)
 {
+   static CumulativeStopwatch sw("TH1::Fill3");
+   CumulativeSWStartStopper swss(sw);
+
    Int_t bin;
    fEntries++;
    bin =fXaxis.FindBin(namex);
@@ -3361,6 +3371,9 @@ Int_t TH1::Fill(const char *namex, Double_t w)
 
 void TH1::FillN(Int_t ntimes, const Double_t *x, const Double_t *w, Int_t stride)
 {
+   static CumulativeStopwatch sw("TH1::FillN");
+   CumulativeSWStartStopper swss(sw);
+
    //If a buffer is activated, fill buffer
    if (fBuffer) {
       ntimes *= stride;
