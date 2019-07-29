@@ -121,6 +121,8 @@ public:
 
    void Update(unsigned int slot, Long64_t entry) final
    {
+      static CumulativeStopwatch sw("Eval Define");
+      CumulativeSWStartStopper swss(sw);
       if (entry != fLastCheckedEntry[slot]) {
          // evaluate this filter, cache the result
          UpdateHelper(slot, entry, TypeInd_t(), ColumnTypes_t(), ExtraArgsTag{});
