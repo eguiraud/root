@@ -474,6 +474,10 @@ Long64_t TTreeReader::GetEntries(Bool_t force)  {
 
 TTreeReader::EEntryStatus TTreeReader::SetEntryBase(Long64_t entry, Bool_t local)
 {
+
+   static CumulativeStopwatch sw("TTreeReader::SetEntryBase");
+   CumulativeSWStartStopper swss(sw);
+
    if (IsInvalid()) {
       fEntryStatus = kEntryNoTree;
       fEntry = -1;

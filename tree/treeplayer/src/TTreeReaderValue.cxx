@@ -250,6 +250,9 @@ void ROOT::Internal::TTreeReaderValueBase::NotifyNewTree(TTree* newTree) {
 /// Returns the memory address of the object being read.
 
 void* ROOT::Internal::TTreeReaderValueBase::GetAddress() {
+   static CumulativeStopwatch sw("TTreeReaderValueBase::GetAddress");
+   CumulativeSWStartStopper swss(sw);
+
    if (ProxyRead() != kReadSuccess) return 0;
 
    if (fHaveLeaf){
