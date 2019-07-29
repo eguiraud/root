@@ -55,8 +55,8 @@ class CumulativeStopwatch {
    std::chrono::high_resolution_clock::duration duration;
 
 public:
-   CumulativeStopwatch(const std::string &_name) : name(_name) {}
-   ~CumulativeStopwatch() { std::cout << name << ": " << duration.count() << " ns" << std::endl; }
+   CumulativeStopwatch(const std::string &_name) : name(_name), duration(0) {}
+   ~CumulativeStopwatch() { std::cout << name << ": " << std::setprecision(3) << duration.count() / 1e9  << " s" << std::endl; }
 
    void Start() { if (++recurse_count == 1) last_start = clock.now(); }
    void Stop() { if (--recurse_count == 0) duration += clock.now() - last_start; }
