@@ -501,10 +501,18 @@ unsigned int RLoopManager::GetNextID()
 /// Also perform a few setup and clean-up operations (jit actions if necessary, clear booked actions after the loop...).
 void RLoopManager::Run()
 {
+   CumulativeStopwatch jitsw("jit");
+   jitsw.Start();
    Jit();
+   jitsw.Stop();
 
+   CumulativeStopwatch initsw("init nodes");
+   initsw.Start();
    InitNodes();
+   initsw.Stop();
 
+   CumulativeStopwatch loopsw("event loop");
+   loopsw.Start();
    switch (fLoopType) {
    case ELoopType::kNoFilesMT: RunEmptySourceMT(); break;
    case ELoopType::kROOTFilesMT: RunTreeProcessorMT(); break;
@@ -513,10 +521,14 @@ void RLoopManager::Run()
    case ELoopType::kROOTFiles: RunTreeReader(); break;
    case ELoopType::kDataSource: RunDataSource(); break;
    }
+   loopsw.Stop();
 
+   CumulativeStopwatch cleanupsw("cleanup nodes");
+   cleanupsw.Start();
    CleanUpNodes();
 
    fNRuns++;
+   cleanupsw.Stop();
 }
 
 /// Return the list of default columns -- empty if none was provided when constructing the RDataFrame
