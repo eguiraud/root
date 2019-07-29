@@ -83,6 +83,9 @@ public:
 
    bool CheckFilters(unsigned int slot, Long64_t entry) final
    {
+      static CumulativeStopwatch sw("CheckFilters");
+      CumulativeSWStartStopper swss(sw);
+
       if (entry != fLastCheckedEntry[slot]) {
          if (!fPrevData.CheckFilters(slot, entry)) {
             // a filter upstream returned false, cache the result
