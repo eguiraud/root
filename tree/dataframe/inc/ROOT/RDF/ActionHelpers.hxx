@@ -823,12 +823,12 @@ public:
    SumHelper(SumHelper &&) = default;
    SumHelper(const SumHelper &) = delete;
    SumHelper(const std::shared_ptr<ResultType> &sumVPtr, const unsigned int nSlots)
-      : fResultSum(sumVPtr), fSums(nSlots, NeutralElement(*sumVPtr, -1))
+      : fResultSum(sumVPtr), fSums(nSlots * 1024, NeutralElement(*sumVPtr, -1))
    {
    }
 
    void InitTask(TTreeReader *, unsigned int) {}
-   void Exec(unsigned int slot, ResultType v) { fSums[slot] += v; }
+   void Exec(unsigned int slot, ResultType v) { fSums[slot * 1024] += v; }
 
    template <typename T, typename std::enable_if<IsDataContainer<T>::value, int>::type = 0>
    void Exec(unsigned int slot, const T &vs)
