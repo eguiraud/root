@@ -48,5 +48,5 @@ std::string RCustomColumnBase::GetName() const
 
 void RCustomColumnBase::InitNode()
 {
-   fLastCheckedEntry = std::vector<Long64_t>(fNSlots, -1);
+   fLastCheckedEntry = std::vector<Long64_t>(fNSlots * 1024, -1);
 }
