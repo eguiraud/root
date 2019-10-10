@@ -86,16 +86,16 @@ public:
       if (entry != fLastCheckedEntry[slot]) {
          if (!fPrevData.CheckFilters(slot, entry)) {
             // a filter upstream returned false, cache the result
-            fLastResult[slot] = false;
+            fLastResult[slot * 1024] = false;
          } else {
             // evaluate this filter, cache the result
             auto passed = CheckFilterHelper(slot, entry, TypeInd_t());
-            passed ? ++fAccepted[slot] : ++fRejected[slot];
-            fLastResult[slot] = passed;
+            passed ? ++fAccepted[slot * 1024] : ++fRejected[slot * 1024];
+            fLastResult[slot * 1024] = passed;
          }
-         fLastCheckedEntry[slot] = entry;
+         fLastCheckedEntry[slot * 1024] = entry;
       }
-      return fLastResult[slot];
+      return fLastResult[slot * 1024];
    }
 
    template <std::size_t... S>

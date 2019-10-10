@@ -16,7 +16,7 @@ using namespace ROOT::Detail::RDF;
 
 RFilterBase::RFilterBase(RLoopManager *implPtr, std::string_view name, const unsigned int nSlots,
                          const RDFInternal::RBookedCustomColumns &customColumns)
-   : RNodeBase(implPtr), fLastResult(nSlots), fAccepted(nSlots), fRejected(nSlots), fName(name), fNSlots(nSlots),
+   : RNodeBase(implPtr), fLastResult(nSlots * 1024), fAccepted(nSlots * 1024), fRejected(nSlots * 1024), fName(name), fNSlots(nSlots),
      fCustomColumns(customColumns) {}
 
 // outlined to pin virtual table
@@ -43,7 +43,7 @@ void RFilterBase::FillReport(ROOT::RDF::RCutFlowReport &rep) const
 
 void RFilterBase::InitNode()
 {
-   fLastCheckedEntry = std::vector<Long64_t>(fNSlots, -1);
+   fLastCheckedEntry = std::vector<Long64_t>(fNSlots * 1024, -1);
    if (!fName.empty()) // if this is a named filter we care about its report count
       ResetReportCount();
 }
