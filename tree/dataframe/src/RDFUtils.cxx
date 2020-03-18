@@ -287,6 +287,7 @@ std::vector<std::string> ReplaceDotWithUnderscore(const std::vector<std::string>
 
 void InterpreterDeclare(const std::string &code)
 {
+   std::cerr << code << std::endl;
    if (!gInterpreter->Declare(code.c_str())) {
       const auto msg = "\nAn error occurred while jitting. The lines above might indicate the cause of the crash\n";
       throw std::runtime_error(msg);
@@ -295,6 +296,7 @@ void InterpreterDeclare(const std::string &code)
 
 Long64_t InterpreterCalc(const std::string &code, const std::string &context)
 {
+   std::cerr << code << std::endl;
    TInterpreter::EErrorCode errorCode(TInterpreter::kNoError);
    auto res = gInterpreter->Calc(code.c_str(), &errorCode);
    if (errorCode != TInterpreter::EErrorCode::kNoError) {
