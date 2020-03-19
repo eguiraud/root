@@ -27,31 +27,46 @@
 class TTreeReader;
 
 namespace ROOT {
-namespace Detail {
+namespace Internal {
 namespace RDF {
-
-using namespace ROOT::TypeTraits;
-
 // clang-format off
 namespace CustomColExtraArgs {
 struct None{};
 struct Slot{};
 struct SlotAndEntry{};
 }
-// clang-format on
 
-template <typename F, typename ExtraArgsTag = CustomColExtraArgs::None>
+// clang-format on
+template <typename ExtraArgsTag = CustomColExtraArgs::None>
+struct ColumnTypes {
+   template <typename U, typename ...Ts>
+   using types = void;
+};
+
+template <>
+struct ColumnTypes<CustomColExtraArgs::Slot> {
+   using types = void;
+};
+
+template <>
+struct ColumnTypes<CustomColExtraArgs::SlotAndEntry> {
+   using types = void;
+};
+
+}
+
+namespace Detail {
+namespace RDF {
+
+using namespace ROOT::TypeTraits;
+
+template <typename F, typename ExtraArgsTag = RDFInternal::CustomColExtraArgs::None>
 class RCustomColumn final : public RCustomColumnBase {
-   // shortcuts
-   using NoneTag = CustomColExtraArgs::None;
-   using SlotTag = CustomColExtraArgs::Slot;
-   using SlotAndEntryTag = CustomColExtraArgs::SlotAndEntry;
    // other types
    using FunParamTypes_t = typename CallableTraits<F>::arg_types;
    using ColumnTypesTmp_t =
       RDFInternal::RemoveFirstParameterIf_t<std::is_same<ExtraArgsTag, SlotTag>::value, FunParamTypes_t>;
-   using ColumnTypes_t =
-      RDFInternal::RemoveFirstTwoParametersIf_t<std::is_same<ExtraArgsTag, SlotAndEntryTag>::value, ColumnTypesTmp_t>;
+   using ColumnTypes_t = typename RDFInternal::ColumnTypes<ExtraArgsTag>::template types<FunParamTypes_t>;
    using TypeInd_t = std::make_index_sequence<ColumnTypes_t::list_size>;
    using ret_type = typename CallableTraits<F>::ret_type;
    // Avoid instantiating vector<bool> as `operator[]` returns temporaries in that case. Use std::deque instead.
