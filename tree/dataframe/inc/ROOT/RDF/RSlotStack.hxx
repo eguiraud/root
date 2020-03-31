@@ -14,6 +14,7 @@
 #include <ROOT/TSpinMutex.hxx>
 
 #include <stack>
+#include <mutex>
 
 namespace ROOT {
 namespace Internal {
@@ -27,7 +28,7 @@ class RSlotStack {
 private:
    const unsigned int fSize;
    std::stack<unsigned int> fStack;
-   ROOT::TSpinMutex fMutex;
+   std::mutex fMutex;
 
 public:
    RSlotStack() = delete;

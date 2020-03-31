@@ -22,14 +22,14 @@ ROOT::Internal::RDF::RSlotStack::RSlotStack(unsigned int size) : fSize(size)
 
 void ROOT::Internal::RDF::RSlotStack::ReturnSlot(unsigned int slot)
 {
-   std::lock_guard<ROOT::TSpinMutex> guard(fMutex);
+   std::lock_guard<std::mutex> guard(fMutex);
    R__ASSERT(fStack.size() < fSize && "Trying to put back a slot to a full stack!");
    fStack.push(slot);
 }
 
 unsigned int ROOT::Internal::RDF::RSlotStack::GetSlot()
 {
-   std::lock_guard<ROOT::TSpinMutex> guard(fMutex);
+   std::lock_guard<std::mutex> guard(fMutex);
    R__ASSERT(!fStack.empty() && "Trying to pop a slot from an empty stack!");
    const auto slot = fStack.top();
    fStack.pop();
