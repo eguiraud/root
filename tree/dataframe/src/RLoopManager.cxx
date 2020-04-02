@@ -6,6 +6,7 @@
 #include "ROOT/RDF/RRangeBase.hxx"
 #include "ROOT/RDF/RSlotStack.hxx"
 #include "RtypesCore.h" // Long64_t
+#include "TStopwatch.h"
 #include "TBranchElement.h"
 #include "TBranchObject.h"
 #include "TEntryList.h"
@@ -556,7 +557,11 @@ void RLoopManager::Run()
 {
    ThrowIfPoolSizeChanged(GetNSlots());
 
+   TStopwatch s;
+   s.Start();
    Jit();
+   s.Stop();
+   std::cout << s.RealTime() << std::endl;
 
    InitNodes();
 
