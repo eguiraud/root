@@ -561,10 +561,11 @@ void RLoopManager::Run()
    s.Start();
    Jit();
    s.Stop();
-   std::cout << s.RealTime() << std::endl;
+   std::cout << "jitting: " << s.RealTime() << std::endl;
 
    InitNodes();
 
+   s.Start();
    switch (fLoopType) {
    case ELoopType::kNoFilesMT: RunEmptySourceMT(); break;
    case ELoopType::kROOTFilesMT: RunTreeProcessorMT(); break;
@@ -573,6 +574,8 @@ void RLoopManager::Run()
    case ELoopType::kROOTFiles: RunTreeReader(); break;
    case ELoopType::kDataSource: RunDataSource(); break;
    }
+   s.Stop();
+   std::cout << "looping: " << s.RealTime() << std::endl;
 
    CleanUpNodes();
 
