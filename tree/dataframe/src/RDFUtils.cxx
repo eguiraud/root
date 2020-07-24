@@ -28,6 +28,8 @@
 #include <cstring>
 #include <typeinfo>
 
+#include <iostream>
+
 using namespace ROOT::Detail::RDF;
 using namespace ROOT::RDF;
 
@@ -301,6 +303,12 @@ std::vector<std::string> ReplaceDotWithUnderscore(const std::vector<std::string>
 
 void InterpreterDeclare(const std::string &code)
 {
+   std::cerr << R"(/*
+#include <ROOT/RDataFrame.hxx>
+#include <memory>
+using namespace std;
+*/)" << '\n';
+   std::cerr << code << '\n';
    if (!gInterpreter->Declare(code.c_str())) {
       const auto msg =
          "\nRDataFrame: An error occurred during just-in-time compilation. The lines above might indicate the cause of "
@@ -311,6 +319,9 @@ void InterpreterDeclare(const std::string &code)
 
 Long64_t InterpreterCalc(const std::string &code, const std::string &context)
 {
+   std::cerr << "void foo() {\n";
+   std::cerr << code << '\n';
+   std::cerr << "}\n";
    TInterpreter::EErrorCode errorCode(TInterpreter::kNoError);
    auto res = gInterpreter->Calc(code.c_str(), &errorCode);
    if (errorCode != TInterpreter::EErrorCode::kNoError) {
