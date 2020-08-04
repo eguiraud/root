@@ -148,6 +148,7 @@ template <bool MustRemove, typename TypeList>
 using RemoveFirstTwoParametersIf_t = typename RemoveFirstTwoParametersIf<MustRemove, TypeList>::type;
 
 /// Detect whether a type is an instantiation of RVec<T>
+//FIXME is this still used anywhere?
 template <typename>
 struct IsRVec_t : public std::false_type {};
 
