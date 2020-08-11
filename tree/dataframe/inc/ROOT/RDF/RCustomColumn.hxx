@@ -40,7 +40,7 @@ struct SlotAndEntry{};
 }
 // clang-format on
 
-template <typename F, typename ExtraArgsTag = CustomColExtraArgs::None>
+template <typename F, typename DataSource, typename ExtraArgsTag = CustomColExtraArgs::None>
 class RCustomColumn final : public RCustomColumnBase {
    // shortcuts
    using NoneTag = CustomColExtraArgs::None;

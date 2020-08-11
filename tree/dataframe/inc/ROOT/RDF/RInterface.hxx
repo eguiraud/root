@@ -2217,7 +2217,7 @@ private:
       const std::string entryColType = "ULong64_t";
       auto entryColGen = [](unsigned int, ULong64_t entry) { return entry; };
       using NewColEntry_t =
-         RDFDetail::RCustomColumn<decltype(entryColGen), RDFDetail::CustomColExtraArgs::SlotAndEntry>;
+         RDFDetail::RCustomColumn<decltype(entryColGen), DataSource, RDFDetail::CustomColExtraArgs::SlotAndEntry>;
 
       auto entryColumn = std::make_shared<NewColEntry_t>(entryColName, entryColType, std::move(entryColGen),
                                                          ColumnNames_t{}, fLoopManager->GetNSlots(), newCols);
@@ -2228,7 +2228,8 @@ private:
       const std::string slotColName = "rdfslot_";
       const std::string slotColType = "unsigned int";
       auto slotColGen = [](unsigned int slot) { return slot; };
-      using NewColSlot_t = RDFDetail::RCustomColumn<decltype(slotColGen), RDFDetail::CustomColExtraArgs::Slot>;
+      using NewColSlot_t =
+         RDFDetail::RCustomColumn<decltype(slotColGen), DataSource, RDFDetail::CustomColExtraArgs::Slot>;
 
       auto slotColumn = std::make_shared<NewColSlot_t>(slotColName, slotColType, std::move(slotColGen), ColumnNames_t{},
                                                        fLoopManager->GetNSlots(), newCols);
@@ -2342,7 +2343,7 @@ private:
          retTypeName = "CLING_UNKNOWN_TYPE_" + demangledType;
       }
 
-      using NewCol_t = RDFDetail::RCustomColumn<F, CustomColumnType>;
+      using NewCol_t = RDFDetail::RCustomColumn<F, DataSource, CustomColumnType>;
       RDFInternal::RBookedCustomColumns newCols(newColumns);
       auto newColumn = std::make_shared<NewCol_t>(name, retTypeName, std::forward<F>(expression), validColumnNames,
                                                   fLoopManager->GetNSlots(), newCols);
@@ -2472,9 +2473,9 @@ protected:
    RDFInternal::RBookedCustomColumns
    CheckAndFillDSColumns(ColumnNames_t validCols, std::index_sequence<S...>, TTraits::TypeList<ColumnTypes...>)
    {
-      return fDataSource ? RDFInternal::AddDSColumns(validCols, fCustomColumns, *fDataSource, fLoopManager->GetNSlots(),
-                                                     std::index_sequence_for<ColumnTypes...>(),
-                                                     TTraits::TypeList<ColumnTypes...>())
+      return fDataSource ? RDFInternal::AddDSColumns<DataSource>(
+                              validCols, fCustomColumns, *fDataSource, fLoopManager->GetNSlots(),
+                              std::index_sequence_for<ColumnTypes...>(), TTraits::TypeList<ColumnTypes...>())
                          : fCustomColumns;
    }
 };

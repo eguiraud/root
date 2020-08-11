@@ -216,6 +216,8 @@ namespace RDF {
 template <typename DataSource>
 class RLoopManager final : public RLoopManagerBase {
 public:
+   using DataSource_t = DataSource;
+
    RLoopManager(TTree *tree, const ColumnNames_t &defaultBranches) : RLoopManagerBase(tree, defaultBranches) {}
    RLoopManager(ULong64_t nEmptyEntries) : RLoopManagerBase(nEmptyEntries) {}
    RLoopManager(std::unique_ptr<RDFInternal::DS_t<DataSource>> ds, const ColumnNames_t &defaultBranches)

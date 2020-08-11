@@ -45,6 +45,8 @@ protected:
    unsigned int fNStopsReceived{0}; ///< Number of times that a children node signaled to stop processing entries.
 
 public:
+   using DataSource_t = void;
+
    RNodeBase(RLoopManagerBase *lm = nullptr) : fLoopManager(lm) {}
    virtual ~RNodeBase() {}
    virtual bool CheckFilters(unsigned int, Long64_t) = 0;

@@ -296,12 +296,12 @@ std::vector<bool> FindUndefinedDSColumns(const ColumnNames_t &requestedCols, con
 
 using ROOT::Detail::RDF::ColumnNames_t;
 
-template <typename T>
+template <typename T, typename DataSource>
 void AddDSColumnsHelper(std::string_view name, RBookedCustomColumns &currentCols, RDataSource &ds, unsigned int nSlots)
 {
    auto readers = ds.GetColumnReaders<T>(name);
    auto getValue = [readers](unsigned int slot) { return *readers[slot]; };
-   using NewCol_t = RCustomColumn<decltype(getValue), CustomColExtraArgs::Slot>;
+   using NewCol_t = RCustomColumn<decltype(getValue), DataSource, CustomColExtraArgs::Slot>;
 
    auto newCol = std::make_shared<NewCol_t>(name, ds.GetTypeName(name), std::move(getValue), ColumnNames_t{}, nSlots,
                                             currentCols, /*isDSColumn=*/true);
@@ -311,7 +311,7 @@ void AddDSColumnsHelper(std::string_view name, RBookedCustomColumns &currentCols
 
 /// Take list of column names that must be defined, current map of custom columns, current list of defined column names,
 /// and return a new map of custom columns (with the new datasource columns added to it)
-template <typename... ColumnTypes, std::size_t... S>
+template <typename DataSource, typename... ColumnTypes, std::size_t... S>
 RDFInternal::RBookedCustomColumns
 AddDSColumns(const std::vector<std::string> &requiredCols, const RDFInternal::RBookedCustomColumns &currentCols,
              RDataSource &ds, unsigned int nSlots, std::index_sequence<S...>, TTraits::TypeList<ColumnTypes...>)
@@ -325,8 +325,9 @@ AddDSColumns(const std::vector<std::string> &requiredCols, const RDFInternal::RB
       auto newColumns(currentCols);
 
       // hack to expand a template parameter pack without c++17 fold expressions.
-      int expander[] = {(mustBeDefined[S] ? AddDSColumnsHelper<ColumnTypes>(requiredCols[S], newColumns, ds, nSlots)
-                                          : /*no-op*/ ((void)0),
+      int expander[] = {(mustBeDefined[S]
+                            ? AddDSColumnsHelper<ColumnTypes, DataSource>(requiredCols[S], newColumns, ds, nSlots)
+                            : /*no-op*/ ((void)0),
                          0)...,
                         0};
       (void)expander; // avoid unused variable warnings
@@ -364,8 +365,8 @@ void JitFilterHelper(F &&f, const ColumnNames_t &cols, std::string_view name,
    auto &lm = *jittedFilter->GetLoopManagerUnchecked(); // RLoopManager must exist at this time
    auto ds = lm.GetDataSource();
 
-   auto newColumns = ds ? RDFInternal::AddDSColumns(cols, *customColumns, *ds, lm.GetNSlots(),
-                                                    std::make_index_sequence<nColumns>(), ColTypes_t())
+   auto newColumns = ds ? RDFInternal::AddDSColumns<void>(cols, *customColumns, *ds, lm.GetNSlots(),
+                                                          std::make_index_sequence<nColumns>(), ColTypes_t())
                         : *customColumns;
 
    // customColumns points to the columns structure in the heap, created before the jitted call so that the jitter can
@@ -396,13 +397,13 @@ void JitDefineHelper(F &&f, const ColumnNames_t &cols, std::string_view name, RL
    auto jittedCustomCol = wkJittedCustomCol->lock();
 
    using Callable_t = typename std::decay<F>::type;
-   using NewCol_t = RCustomColumn<Callable_t, CustomColExtraArgs::None>;
+   using NewCol_t = RCustomColumn<Callable_t, void, CustomColExtraArgs::None>;
    using ColTypes_t = typename TTraits::CallableTraits<Callable_t>::arg_types;
    constexpr auto nColumns = ColTypes_t::list_size;
 
    auto ds = lm->GetDataSource();
-   auto newColumns = ds ? RDFInternal::AddDSColumns(cols, *customColumns, *ds, lm->GetNSlots(),
-                                                    std::make_index_sequence<nColumns>(), ColTypes_t())
+   auto newColumns = ds ? RDFInternal::AddDSColumns<void>(cols, *customColumns, *ds, lm->GetNSlots(),
+                                                          std::make_index_sequence<nColumns>(), ColTypes_t())
                         : *customColumns;
 
    // customColumns points to the columns structure in the heap, created before the jitted call so that the jitter can
@@ -447,8 +448,8 @@ void CallBuildAction(std::shared_ptr<PrevNodeType> *prevNodeOnHeap, const Column
    using ColTypes_t = TypeList<BranchTypes...>;
    constexpr auto nColumns = ColTypes_t::list_size;
    auto ds = loopManager.GetDataSource();
-   auto newColumns = ds ? RDFInternal::AddDSColumns(bl, *customColumns, *ds, loopManager.GetNSlots(),
-                                                    std::make_index_sequence<nColumns>(), ColTypes_t())
+   auto newColumns = ds ? RDFInternal::AddDSColumns<void>(bl, *customColumns, *ds, loopManager.GetNSlots(),
+                                                          std::make_index_sequence<nColumns>(), ColTypes_t())
                         : *customColumns;
 
    auto actionPtr = BuildAction<BranchTypes...>(bl, std::move(rOnHeap), nSlots, std::move(prevNodePtr), ActionTag{},
