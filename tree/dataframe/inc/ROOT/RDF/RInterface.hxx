@@ -91,7 +91,7 @@ class RInterface {
    using ColumnNames_t = RDFDetail::ColumnNames_t;
    using RFilterBase = RDFDetail::RFilterBase;
    using RRangeBase = RDFDetail::RRangeBase;
-   using RLoopManager = RDFDetail::RLoopManager;
+   using RLoopManagerBase = RDFDetail::RLoopManagerBase;
    friend std::string cling::printValue(::ROOT::RDataFrame *tdf); // For a nice printing at the prompt
    friend class RDFInternal::GraphDrawing::GraphCreatorHelper;
 
@@ -100,8 +100,8 @@ class RInterface {
 
    std::shared_ptr<Proxied> fProxiedPtr; ///< Smart pointer to the graph node encapsulated by this RInterface.
    ///< The RLoopManager at the root of this computation graph. Never null.
-   RLoopManager *fLoopManager;
-   /// Non-owning pointer to a data-source object. Null if no data-source. RLoopManager has ownership of the object.
+   RLoopManagerBase *fLoopManager;
+   /// Non-owning pointer to a data-source object. Null if no data-source. RLoopManagerBase has ownership of the object.
    RDataSource *fDataSource = nullptr;
 
    /// Contains the custom columns defined up to this node.
@@ -122,7 +122,7 @@ public:
 
    ////////////////////////////////////////////////////////////////////////////
    /// \brief Only enabled when building a RInterface<RLoopManager>
-   template <typename T = Proxied, typename std::enable_if<std::is_same<T, RLoopManager>::value, int>::type = 0>
+   template <typename T = Proxied, typename std::enable_if<std::is_base_of<RLoopManagerBase, T>::value, int>::type = 0>
    RInterface(const std::shared_ptr<Proxied> &proxied)
       : fProxiedPtr(proxied), fLoopManager(proxied.get()), fDataSource(proxied->GetDataSource())
    {
@@ -456,7 +456,7 @@ public:
    /// df.Snapshot("outputTree", "outputFile.root", {"x"}, opts);
    /// ~~~
    template <typename... ColumnTypes>
-   RResultPtr<RInterface<RLoopManager>>
+   RResultPtr<RInterface<RDFDetail::RLoopManager<TTree>>>
    Snapshot(std::string_view treename, std::string_view filename, const ColumnNames_t &columnList,
             const RSnapshotOptions &options = RSnapshotOptions())
    {
@@ -475,15 +475,16 @@ public:
    /// The types of the columns are automatically inferred and do not need to be specified.
    ///
    /// See above for a more complete description and example usages.
-   RResultPtr<RInterface<RLoopManager>> Snapshot(std::string_view treename, std::string_view filename,
-                                                 const ColumnNames_t &columnList,
-                                                 const RSnapshotOptions &options = RSnapshotOptions())
+   RResultPtr<RInterface<RDFDetail::RLoopManager<TTree>>> Snapshot(std::string_view treename, std::string_view filename,
+                                                                   const ColumnNames_t &columnList,
+                                                                   const RSnapshotOptions &options = RSnapshotOptions())
    {
       // Early return: if the list of columns is empty, just return an empty RDF
       // If we proceed, the jitted call will not compile!
       if (columnList.empty()) {
          auto nEntries = *this->Count();
-         auto snapshotRDF = std::make_shared<RInterface<RLoopManager>>(std::make_shared<RLoopManager>(nEntries));
+         auto snapshotRDF = std::make_shared<RInterface<RDFDetail::RLoopManager<TTree>>>(
+            std::make_shared<RDFDetail::RLoopManager<TTree>>(nEntries));
          return MakeResultPtr(snapshotRDF, *fLoopManager, nullptr);
       }
       std::stringstream snapCall;
@@ -493,11 +494,12 @@ public:
 
       // build a string equivalent to
       // "resPtr = (RInterface<nodetype*>*)(this)->Snapshot<Ts...>(args...)"
-      RResultPtr<RInterface<RLoopManager>> resPtr;
-      snapCall << "*reinterpret_cast<ROOT::RDF::RResultPtr<ROOT::RDF::RInterface<ROOT::Detail::RDF::RLoopManager>>*>("
-               << RDFInternal::PrettyPrintAddr(&resPtr)
-               << ") = reinterpret_cast<ROOT::RDF::RInterface<ROOT::Detail::RDF::RNodeBase>*>("
-               << RDFInternal::PrettyPrintAddr(&upcastInterface) << ")->Snapshot<";
+      RResultPtr<RInterface<RDFDetail::RLoopManager<TTree>>> resPtr;
+      snapCall
+         << "*reinterpret_cast<ROOT::RDF::RResultPtr<ROOT::RDF::RInterface<ROOT::Detail::RDF::RLoopManager<TTree>>>*>("
+         << RDFInternal::PrettyPrintAddr(&resPtr)
+         << ") = reinterpret_cast<ROOT::RDF::RInterface<ROOT::Detail::RDF::RNodeBase>*>("
+         << RDFInternal::PrettyPrintAddr(&upcastInterface) << ")->Snapshot<";
 
       const auto validColumnNames = GetValidatedColumnNames(columnList.size(), columnList);
       const auto colTypes = GetValidatedArgTypes(validColumnNames, fCustomColumns, fLoopManager->GetTree(), fDataSource,
@@ -529,9 +531,9 @@ public:
    /// The types of the columns are automatically inferred and do not need to be specified.
    ///
    /// See above for a more complete description and example usages.
-   RResultPtr<RInterface<RLoopManager>> Snapshot(std::string_view treename, std::string_view filename,
-                                                 std::string_view columnNameRegexp = "",
-                                                 const RSnapshotOptions &options = RSnapshotOptions())
+   RResultPtr<RInterface<RDFDetail::RLoopManager<TTree>>> Snapshot(std::string_view treename, std::string_view filename,
+                                                                   std::string_view columnNameRegexp = "",
+                                                                   const RSnapshotOptions &options = RSnapshotOptions())
    {
       auto selectedColumns = RDFInternal::ConvertRegexToColumns(fCustomColumns,
                                                                 fLoopManager->GetTree(),
@@ -555,9 +557,9 @@ public:
    /// The types of the columns are automatically inferred and do not need to be specified.
    ///
    /// See above for a more complete description and example usages.
-   RResultPtr<RInterface<RLoopManager>> Snapshot(std::string_view treename, std::string_view filename,
-                                                 std::initializer_list<std::string> columnList,
-                                                 const RSnapshotOptions &options = RSnapshotOptions())
+   RResultPtr<RInterface<RDFDetail::RLoopManager<TTree>>> Snapshot(std::string_view treename, std::string_view filename,
+                                                                   std::initializer_list<std::string> columnList,
+                                                                   const RSnapshotOptions &options = RSnapshotOptions())
    {
       ColumnNames_t selectedColumns(columnList);
       return Snapshot(treename, filename, selectedColumns, options);
@@ -594,7 +596,7 @@ public:
    /// auto cache_all_cols_df = df.Cache(myRegexp);
    /// ~~~
    template <typename... ColumnTypes>
-   RInterface<RLoopManager> Cache(const ColumnNames_t &columnList)
+   RInterface<RDFDetail::RLoopManager<void>> Cache(const ColumnNames_t &columnList)
    {
       auto staticSeq = std::make_index_sequence<sizeof...(ColumnTypes)>();
       return CacheImpl<ColumnTypes...>(columnList, staticSeq);
@@ -606,13 +608,13 @@ public:
    /// \return a `RDataFrame` that wraps the cached dataset.
    ///
    /// See the previous overloads for more information.
-   RInterface<RLoopManager> Cache(const ColumnNames_t &columnList)
+   RInterface<RDFDetail::RLoopManager<void>> Cache(const ColumnNames_t &columnList)
    {
       // Early return: if the list of columns is empty, just return an empty RDF
       // If we proceed, the jitted call will not compile!
       if (columnList.empty()) {
          auto nEntries = *this->Count();
-         RInterface<RLoopManager> emptyRDF(std::make_shared<RLoopManager>(nEntries));
+         RInterface<RDFDetail::RLoopManager<void>> emptyRDF(std::make_shared<RDFDetail::RLoopManager<void>>(nEntries));
          return emptyRDF;
       }
 
@@ -622,8 +624,8 @@ public:
                                                                                       fCustomColumns, fDataSource);
       // build a string equivalent to
       // "(RInterface<nodetype*>*)(this)->Cache<Ts...>(*(ColumnNames_t*)(&columnList))"
-      RInterface<RLoopManager> resRDF(std::make_shared<ROOT::Detail::RDF::RLoopManager>(0));
-      cacheCall << "*reinterpret_cast<ROOT::RDF::RInterface<ROOT::Detail::RDF::RLoopManager>*>("
+      RInterface<RDFDetail::RLoopManager<void>> resRDF(std::make_shared<RDFDetail::RLoopManager<void>>(0));
+      cacheCall << "*reinterpret_cast<ROOT::RDF::RInterface<ROOT::Detail::RDF::RLoopManager<void>>*>("
                 << RDFInternal::PrettyPrintAddr(&resRDF)
                 << ") = reinterpret_cast<ROOT::RDF::RInterface<ROOT::Detail::RDF::RNodeBase>*>("
                 << RDFInternal::PrettyPrintAddr(&upcastInterface) << ")->Cache<";
@@ -649,7 +651,7 @@ public:
    ///
    /// The existing columns are matched against the regular expression. If the string provided
    /// is empty, all columns are selected. See the previous overloads for more information.
-   RInterface<RLoopManager> Cache(std::string_view columnNameRegexp = "")
+   RInterface<RDFDetail::RLoopManager<void>> Cache(std::string_view columnNameRegexp = "")
    {
 
       auto selectedColumns = RDFInternal::ConvertRegexToColumns(fCustomColumns, fLoopManager->GetTree(), fDataSource,
@@ -663,7 +665,7 @@ public:
    /// \return a `RDataFrame` that wraps the cached dataset.
    ///
    /// See the previous overloads for more information.
-   RInterface<RLoopManager> Cache(std::initializer_list<std::string> columnList)
+   RInterface<RDFDetail::RLoopManager<void>> Cache(std::initializer_list<std::string> columnList)
    {
       ColumnNames_t selectedColumns(columnList);
       return Cache(selectedColumns);
@@ -1785,12 +1787,12 @@ public:
    RResultPtr<RCutFlowReport> Report()
    {
       bool returnEmptyReport = false;
-      // if this is a RInterface<RLoopManager> on which `Define` has been called, users
+      // if this is a RInterface<RLoopManager<...>> on which `Define` has been called, users
       // are calling `Report` on a chain of the form LoopManager->Define->Define->..., which
       // certainly does not contain named filters.
       // The number 4 takes into account the implicit columns for entry and slot number
       // and their aliases (2 + 2, i.e. {r,t}dfentry_ and {r,t}dfslot_)
-      if (std::is_same<Proxied, RLoopManager>::value && fCustomColumns.GetNames().size() > 4)
+      if (std::is_base_of<RLoopManagerBase, Proxied>::value && fCustomColumns.GetNames().size() > 4)
          returnEmptyReport = true;
 
       auto rep = std::make_shared<RCutFlowReport>();
@@ -2378,8 +2380,9 @@ private:
    /// is the address pointing to the storage of the read/created object in/by
    /// the TTreeReaderValue/TemporaryBranch
    template <typename... ColumnTypes>
-   RResultPtr<RInterface<RLoopManager>> SnapshotImpl(std::string_view treename, std::string_view filename,
-                                                     const ColumnNames_t &columnList, const RSnapshotOptions &options)
+   RResultPtr<RInterface<RDFDetail::RLoopManager<TTree>>>
+   SnapshotImpl(std::string_view treename, std::string_view filename, const ColumnNames_t &columnList,
+                const RSnapshotOptions &options)
    {
       RDFInternal::CheckTypesAndPars(sizeof...(ColumnTypes), columnList.size());
 
@@ -2423,7 +2426,8 @@ private:
    ////////////////////////////////////////////////////////////////////////////
    /// \brief Implementation of cache
    template <typename... BranchTypes, std::size_t... S>
-   RInterface<RLoopManager> CacheImpl(const ColumnNames_t &columnList, std::index_sequence<S...> s)
+   RInterface<RDFDetail::RLoopManager<void>>
+   CacheImpl(const ColumnNames_t &columnList, std::index_sequence<S...> s)
    {
       // Check at compile time that the columns types are copy constructible
       constexpr bool areCopyConstructible =
@@ -2437,7 +2441,8 @@ private:
       auto colHolders = std::make_tuple(Take<BranchTypes>(columnList[S])...);
       auto ds = std::make_unique<RLazyDS<BranchTypes...>>(std::make_pair(columnList[S], std::get<S>(colHolders))...);
 
-      RInterface<RLoopManager> cachedRDF(std::make_shared<RLoopManager>(std::move(ds), columnList));
+      RInterface<RDFDetail::RLoopManager<void>> cachedRDF(
+         std::make_shared<RDFDetail::RLoopManager<void>>(std::move(ds), columnList));
 
       (void)s; // Prevents unused warning
 
@@ -2445,13 +2450,13 @@ private:
    }
 
 protected:
-   RInterface(const std::shared_ptr<Proxied> &proxied, RLoopManager &lm,
+   RInterface(const std::shared_ptr<Proxied> &proxied, RLoopManagerBase &lm,
               const RDFInternal::RBookedCustomColumns &columns, RDataSource *ds)
       : fProxiedPtr(proxied), fLoopManager(&lm), fDataSource(ds), fCustomColumns(columns)
    {
    }
 
-   RLoopManager *GetLoopManager() const { return fLoopManager; }
+   RLoopManagerBase *GetLoopManager() const { return fLoopManager; }
 
    const std::shared_ptr<Proxied> &GetProxiedPtr() const { return fProxiedPtr; }
 

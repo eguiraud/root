@@ -31,7 +31,7 @@ namespace Detail {
 namespace RDF {
 namespace RDFInternal = ROOT::Internal::RDF;
 
-class RLoopManager;
+class RLoopManagerBase;
 
 class RFilterBase : public RNodeBase {
 protected:
@@ -45,7 +45,7 @@ protected:
    RDFInternal::RBookedCustomColumns fCustomColumns;
 
 public:
-   RFilterBase(RLoopManager *df, std::string_view name, const unsigned int nSlots,
+   RFilterBase(RLoopManagerBase *df, std::string_view name, const unsigned int nSlots,
                const RDFInternal::RBookedCustomColumns &customColumns);
    RFilterBase &operator=(const RFilterBase &) = delete;
 

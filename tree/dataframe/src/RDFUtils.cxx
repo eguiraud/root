@@ -11,13 +11,13 @@
 #include "RConfigure.h" // R__USE_IMT
 #include "ROOT/RDataSource.hxx"
 #include "ROOT/RDF/RCustomColumnBase.hxx"
-#include "ROOT/RDF/RLoopManager.hxx"
 #include "RtypesCore.h"
 #include "TBranch.h"
 #include "TBranchElement.h"
 #include "TClass.h"
 #include "TClassEdit.h"
 #include "TClassRef.h"
+#include "TError.h" // Info
 #include "TInterpreter.h"
 #include "TLeaf.h"
 #include "TROOT.h" // IsImplicitMTEnabled, GetThreadPoolSize

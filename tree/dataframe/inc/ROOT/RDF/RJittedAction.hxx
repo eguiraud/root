@@ -41,7 +41,7 @@ private:
    std::unique_ptr<RActionBase> fConcreteAction;
 
 public:
-   RJittedAction(RLoopManager &lm);
+   RJittedAction(RLoopManagerBase &lm);
    ~RJittedAction() { fLoopManager->Deregister(this); }
 
    void SetAction(std::unique_ptr<RActionBase> a) { fConcreteAction = std::move(a); }

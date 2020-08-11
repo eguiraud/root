@@ -51,9 +51,9 @@ class RFilterBase;
 class RRangeBase;
 using ROOT::RDF::RDataSource;
 
-/// The head node of a RDF computation graph.
+/// The base class of the head nodes of a RDF computation graph.
 /// This class is responsible of running the event loop.
-class RLoopManager : public RNodeBase {
+class RLoopManagerBase : public RNodeBase {
    enum class ELoopType { kROOTFiles, kROOTFilesMT, kNoFiles, kNoFilesMT, kDataSource, kDataSourceMT };
    using Callback_t = std::function<void(unsigned int)>;
    class TCallback {
@@ -132,15 +132,15 @@ class RLoopManager : public RNodeBase {
    void EvalChildrenCounts();
 
 public:
-   RLoopManager(TTree *tree, const ColumnNames_t &defaultBranches);
-   RLoopManager(ULong64_t nEmptyEntries);
-   RLoopManager(std::unique_ptr<RDataSource> ds, const ColumnNames_t &defaultBranches);
-   RLoopManager(const RLoopManager &) = delete;
-   RLoopManager &operator=(const RLoopManager &) = delete;
+   RLoopManagerBase(TTree *tree, const ColumnNames_t &defaultBranches);
+   RLoopManagerBase(ULong64_t nEmptyEntries);
+   RLoopManagerBase(std::unique_ptr<RDataSource> ds, const ColumnNames_t &defaultBranches);
+   RLoopManagerBase(const RLoopManagerBase &) = delete;
+   RLoopManagerBase &operator=(const RLoopManagerBase &) = delete;
 
    void JitDeclarations();
    void Jit();
-   RLoopManager *GetLoopManagerUnchecked() final { return this; }
+   RLoopManagerBase *GetLoopManagerUnchecked() final { return this; }
    void Run();
    const ColumnNames_t &GetDefaultColumnNames() const;
    TTree *GetTree() const;
@@ -180,9 +180,50 @@ public:
 
    const ColumnNames_t &GetBranchNames();
 };
+} // namespace RDF
+} // namespace Detail
 
-} // ns RDF
-} // ns Detail
-} // ns ROOT
+namespace Internal {
+namespace RDF {
+
+template <typename DataSource>
+struct DSTypeHelper {
+   static_assert(std::is_base_of<RDataSource, DataSource>::value, "");
+   using type = DataSource;
+};
+
+template <>
+struct DSTypeHelper<TTree> {
+   using type = RDataSource;
+};
+
+template <>
+struct DSTypeHelper<void> {
+   using type = RDataSource;
+};
+
+template <typename DataSource>
+using DS_t = typename DSTypeHelper<DataSource>::type;
+
+} // namespace RDF
+} // namespace Internal
+
+namespace Detail {
+namespace RDF {
+
+/// The head node of a computation graph. Most logic is implemented in RLoopManagerBase.
+/// \tparam DataSource This type indicates where the data comes from, if it is known at compile-time. It can be either TTree, a concrete type inheriting from RDataSource, or void (which indicates the information is not known at compile-time).
+template <typename DataSource>
+class RLoopManager final : public RLoopManagerBase {
+public:
+   RLoopManager(TTree *tree, const ColumnNames_t &defaultBranches) : RLoopManagerBase(tree, defaultBranches) {}
+   RLoopManager(ULong64_t nEmptyEntries) : RLoopManagerBase(nEmptyEntries) {}
+   RLoopManager(std::unique_ptr<RDFInternal::DS_t<DataSource>> ds, const ColumnNames_t &defaultBranches)
+      : RLoopManagerBase(std::move(ds), defaultBranches) { }
+};
+
+} // namespace RDF
+} // namespace Detail
+} // namespace ROOT
 
 #endif

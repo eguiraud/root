@@ -11,8 +11,8 @@
 #ifndef ROOT_RDFRANGE
 #define ROOT_RDFRANGE
 
-#include "ROOT/RDF/RLoopManager.hxx"
 #include "ROOT/RDF/RRangeBase.hxx"
+#include "ROOT/RDF/RLoopManager.hxx"
 #include "RtypesCore.h"
 
 #include <memory>

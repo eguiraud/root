@@ -35,10 +35,10 @@ using namespace ROOT::Internal::RDF;
 
 namespace {
 /// A helper function that returns all RDF code that is currently scheduled for just-in-time compilation.
-/// This allows different RLoopManager instances to share these data.
-/// We want RLoopManagers to be able to add their code to a global "code to execute via cling",
+/// This allows different RLoopManagerBase instances to share these data.
+/// We want RLoopManagerBases to be able to add their code to a global "code to execute via cling",
 /// so that, lazily, we can jit everything that's needed by all RDFs in one go, which is potentially
-/// much faster than jitting each RLoopManager's code separately.
+/// much faster than jitting each RLoopManagerBase's code separately.
 static std::string &GetCodeToJit()
 {
    static std::string code;
@@ -218,20 +218,20 @@ ColumnNames_t ROOT::Internal::RDF::GetBranchNames(TTree &t, bool allowDuplicates
    return bNames;
 }
 
-RLoopManager::RLoopManager(TTree *tree, const ColumnNames_t &defaultBranches)
+RLoopManagerBase::RLoopManagerBase(TTree *tree, const ColumnNames_t &defaultBranches)
    : fTree(std::shared_ptr<TTree>(tree, [](TTree *) {})), fDefaultColumns(defaultBranches),
      fNSlots(RDFInternal::GetNSlots()),
      fLoopType(ROOT::IsImplicitMTEnabled() ? ELoopType::kROOTFilesMT : ELoopType::kROOTFiles)
 {
 }
 
-RLoopManager::RLoopManager(ULong64_t nEmptyEntries)
+RLoopManagerBase::RLoopManagerBase(ULong64_t nEmptyEntries)
    : fNEmptyEntries(nEmptyEntries), fNSlots(RDFInternal::GetNSlots()),
      fLoopType(ROOT::IsImplicitMTEnabled() ? ELoopType::kNoFilesMT : ELoopType::kNoFiles)
 {
 }
 
-RLoopManager::RLoopManager(std::unique_ptr<RDataSource> ds, const ColumnNames_t &defaultBranches)
+RLoopManagerBase::RLoopManagerBase(std::unique_ptr<RDataSource> ds, const ColumnNames_t &defaultBranches)
    : fDefaultColumns(defaultBranches), fNSlots(RDFInternal::GetNSlots()),
      fLoopType(ROOT::IsImplicitMTEnabled() ? ELoopType::kDataSourceMT : ELoopType::kDataSource),
      fDataSource(std::move(ds))
@@ -240,7 +240,7 @@ RLoopManager::RLoopManager(std::unique_ptr<RDataSource> ds, const ColumnNames_t 
 }
 
 // ROOT-9559: we cannot handle indexed friends
-void RLoopManager::CheckIndexedFriends()
+void RLoopManagerBase::CheckIndexedFriends()
 {
    auto friends = fTree->GetListOfFriends();
    if (!friends)
@@ -259,7 +259,7 @@ void RLoopManager::CheckIndexedFriends()
 }
 
 /// Run event loop with no source files, in parallel.
-void RLoopManager::RunEmptySourceMT()
+void RLoopManagerBase::RunEmptySourceMT()
 {
 #ifdef R__USE_IMT
    RSlotStack slotStack(fNSlots);
@@ -304,7 +304,7 @@ void RLoopManager::RunEmptySourceMT()
 }
 
 /// Run event loop with no source files, in sequence.
-void RLoopManager::RunEmptySource()
+void RLoopManagerBase::RunEmptySource()
 {
    InitNodeSlots(nullptr, 0);
    try {
@@ -320,7 +320,7 @@ void RLoopManager::RunEmptySource()
 }
 
 /// Run event loop over one or multiple ROOT files, in parallel.
-void RLoopManager::RunTreeProcessorMT()
+void RLoopManagerBase::RunTreeProcessorMT()
 {
 #ifdef R__USE_IMT
    CheckIndexedFriends();
@@ -353,7 +353,7 @@ void RLoopManager::RunTreeProcessorMT()
 }
 
 /// Run event loop over one or multiple ROOT files, in sequence.
-void RLoopManager::RunTreeReader()
+void RLoopManagerBase::RunTreeReader()
 {
    CheckIndexedFriends();
    TTreeReader r(fTree.get(), fTree->GetEntryList());
@@ -381,7 +381,7 @@ void RLoopManager::RunTreeReader()
 }
 
 /// Run event loop over data accessed through a DataSource, in sequence.
-void RLoopManager::RunDataSource()
+void RLoopManagerBase::RunDataSource()
 {
    R__ASSERT(fDataSource != nullptr);
    fDataSource->Initialise();
@@ -411,7 +411,7 @@ void RLoopManager::RunDataSource()
 }
 
 /// Run event loop over data accessed through a DataSource, in parallel.
-void RLoopManager::RunDataSourceMT()
+void RLoopManagerBase::RunDataSourceMT()
 {
 #ifdef R__USE_IMT
    R__ASSERT(fDataSource != nullptr);
@@ -452,7 +452,7 @@ void RLoopManager::RunDataSourceMT()
 
 /// Execute actions and make sure named filters are called for each event.
 /// Named filters must be called even if the analysis logic would not require it, lest they report confusing results.
-void RLoopManager::RunAndCheckFilters(unsigned int slot, Long64_t entry)
+void RLoopManagerBase::RunAndCheckFilters(unsigned int slot, Long64_t entry)
 {
    for (auto &actionPtr : fBookedActions)
       actionPtr->Run(slot, entry);
@@ -467,7 +467,7 @@ void RLoopManager::RunAndCheckFilters(unsigned int slot, Long64_t entry)
 /// calls their `InitRDFValues` methods. It is called once per node per slot, before
 /// running the event loop. It also informs each node of the TTreeReader that
 /// a particular slot will be using.
-void RLoopManager::InitNodeSlots(TTreeReader *r, unsigned int slot)
+void RLoopManagerBase::InitNodeSlots(TTreeReader *r, unsigned int slot)
 {
    for (auto &ptr : fBookedActions)
       ptr->InitSlot(r, slot);
@@ -481,7 +481,7 @@ void RLoopManager::InitNodeSlots(TTreeReader *r, unsigned int slot)
 /// This method is called once per event-loop and performs generic initialization
 /// operations that do not depend on the specific processing slot (i.e. operations
 /// that are common for all threads).
-void RLoopManager::InitNodes()
+void RLoopManagerBase::InitNodes()
 {
    EvalChildrenCounts();
    for (auto &filter : fBookedFilters)
@@ -493,7 +493,7 @@ void RLoopManager::InitNodes()
 }
 
 /// Perform clean-up operations. To be called at the end of each event loop.
-void RLoopManager::CleanUpNodes()
+void RLoopManagerBase::CleanUpNodes()
 {
    fMustRunNamedFilters = false;
 
@@ -517,7 +517,7 @@ void RLoopManager::CleanUpNodes()
 }
 
 /// Perform clean-up operations. To be called at the end of each task execution.
-void RLoopManager::CleanUpTask(unsigned int slot)
+void RLoopManagerBase::CleanUpTask(unsigned int slot)
 {
    for (auto &ptr : fBookedActions)
       ptr->FinalizeSlot(slot);
@@ -527,22 +527,22 @@ void RLoopManager::CleanUpTask(unsigned int slot)
 
 /// Add RDF nodes that require just-in-time compilation to the computation graph.
 /// This method also clears the contents of GetCodeToJit().
-void RLoopManager::Jit()
+void RLoopManagerBase::Jit()
 {
    const std::string code = std::move(GetCodeToJit());
    if (code.empty())
       return;
 
-   RDFInternal::InterpreterCalc(code, "RLoopManager::Run");
+   RDFInternal::InterpreterCalc(code, "RLoopManagerBase::Run");
 }
 
 /// Trigger counting of number of children nodes for each node of the functional graph.
 /// This is done once before starting the event loop. Each action sends an `increase children count` signal
-/// upstream, which is propagated until RLoopManager. Each time a node receives the signal, in increments its
+/// upstream, which is propagated until RLoopManagerBase. Each time a node receives the signal, in increments its
 /// children counter. Each node only propagates the signal once, even if it receives it multiple times.
 /// Named filters also send an `increase children count` signal, just like actions, as they always execute during
 /// the event loop so the graph branch they belong to must count as active even if it does not end in an action.
-void RLoopManager::EvalChildrenCounts()
+void RLoopManagerBase::EvalChildrenCounts()
 {
    for (auto &actionPtr : fBookedActions)
       actionPtr->TriggerChildrenCount();
@@ -552,7 +552,7 @@ void RLoopManager::EvalChildrenCounts()
 
 /// Start the event loop with a different mechanism depending on IMT/no IMT, data source/no data source.
 /// Also perform a few setup and clean-up operations (jit actions if necessary, clear booked actions after the loop...).
-void RLoopManager::Run()
+void RLoopManagerBase::Run()
 {
    ThrowIfPoolSizeChanged(GetNSlots());
 
@@ -575,28 +575,28 @@ void RLoopManager::Run()
 }
 
 /// Return the list of default columns -- empty if none was provided when constructing the RDataFrame
-const ColumnNames_t &RLoopManager::GetDefaultColumnNames() const
+const ColumnNames_t &RLoopManagerBase::GetDefaultColumnNames() const
 {
    return fDefaultColumns;
 }
 
-TTree *RLoopManager::GetTree() const
+TTree *RLoopManagerBase::GetTree() const
 {
    return fTree.get();
 }
 
-void RLoopManager::Book(RDFInternal::RActionBase *actionPtr)
+void RLoopManagerBase::Book(RDFInternal::RActionBase *actionPtr)
 {
    fBookedActions.emplace_back(actionPtr);
 }
 
-void RLoopManager::Deregister(RDFInternal::RActionBase *actionPtr)
+void RLoopManagerBase::Deregister(RDFInternal::RActionBase *actionPtr)
 {
    RDFInternal::Erase(actionPtr, fRunActions);
    RDFInternal::Erase(actionPtr, fBookedActions);
 }
 
-void RLoopManager::Book(RFilterBase *filterPtr)
+void RLoopManagerBase::Book(RFilterBase *filterPtr)
 {
    fBookedFilters.emplace_back(filterPtr);
    if (filterPtr->HasName()) {
@@ -605,41 +605,41 @@ void RLoopManager::Book(RFilterBase *filterPtr)
    }
 }
 
-void RLoopManager::Deregister(RFilterBase *filterPtr)
+void RLoopManagerBase::Deregister(RFilterBase *filterPtr)
 {
    RDFInternal::Erase(filterPtr, fBookedFilters);
    RDFInternal::Erase(filterPtr, fBookedNamedFilters);
 }
 
-void RLoopManager::Book(RRangeBase *rangePtr)
+void RLoopManagerBase::Book(RRangeBase *rangePtr)
 {
    fBookedRanges.emplace_back(rangePtr);
 }
 
-void RLoopManager::Deregister(RRangeBase *rangePtr)
+void RLoopManagerBase::Deregister(RRangeBase *rangePtr)
 {
    RDFInternal::Erase(rangePtr, fBookedRanges);
 }
 
 // dummy call, end of recursive chain of calls
-bool RLoopManager::CheckFilters(unsigned int, Long64_t)
+bool RLoopManagerBase::CheckFilters(unsigned int, Long64_t)
 {
    return true;
 }
 
 /// Call `FillReport` on all booked filters
-void RLoopManager::Report(ROOT::RDF::RCutFlowReport &rep) const
+void RLoopManagerBase::Report(ROOT::RDF::RCutFlowReport &rep) const
 {
    for (const auto &fPtr : fBookedNamedFilters)
       fPtr->FillReport(rep);
 }
 
-void RLoopManager::ToJitExec(const std::string &code) const
+void RLoopManagerBase::ToJitExec(const std::string &code) const
 {
    GetCodeToJit().append(code);
 }
 
-void RLoopManager::RegisterCallback(ULong64_t everyNEvents, std::function<void(unsigned int)> &&f)
+void RLoopManagerBase::RegisterCallback(ULong64_t everyNEvents, std::function<void(unsigned int)> &&f)
 {
    if (everyNEvents == 0ull)
       fCallbacksOnce.emplace_back(std::move(f), fNSlots);
@@ -647,7 +647,7 @@ void RLoopManager::RegisterCallback(ULong64_t everyNEvents, std::function<void(u
       fCallbacks.emplace_back(everyNEvents, std::move(f), fNSlots);
 }
 
-std::vector<std::string> RLoopManager::GetFiltersNames()
+std::vector<std::string> RLoopManagerBase::GetFiltersNames()
 {
    std::vector<std::string> filters;
    for (auto &filter : fBookedFilters) {
@@ -657,7 +657,7 @@ std::vector<std::string> RLoopManager::GetFiltersNames()
    return filters;
 }
 
-std::vector<RDFInternal::RActionBase *> RLoopManager::GetAllActions()
+std::vector<RDFInternal::RActionBase *> RLoopManagerBase::GetAllActions()
 {
    std::vector<RDFInternal::RActionBase *> actions;
    actions.insert(actions.begin(), fBookedActions.begin(), fBookedActions.end());
@@ -665,7 +665,7 @@ std::vector<RDFInternal::RActionBase *> RLoopManager::GetAllActions()
    return actions;
 }
 
-std::shared_ptr<ROOT::Internal::RDF::GraphDrawing::GraphNode> RLoopManager::GetGraph()
+std::shared_ptr<ROOT::Internal::RDF::GraphDrawing::GraphNode> RLoopManagerBase::GetGraph()
 {
    std::string name;
    if (fDataSource) {
@@ -685,7 +685,7 @@ std::shared_ptr<ROOT::Internal::RDF::GraphDrawing::GraphNode> RLoopManager::GetG
 ////////////////////////////////////////////////////////////////////////////
 /// Return all valid TTree::Branch names (caching results for subsequent calls).
 /// Never use fBranchNames directy, always request it through this method.
-const ColumnNames_t &RLoopManager::GetBranchNames()
+const ColumnNames_t &RLoopManagerBase::GetBranchNames()
 {
    if (fValidBranchNames.empty() && fTree) {
       fValidBranchNames = RDFInternal::GetBranchNames(*fTree, /*allowRepetitions=*/true);

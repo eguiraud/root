@@ -67,13 +67,9 @@ using namespace ROOT::RDF;
 namespace TTraits = ROOT::TypeTraits;
 namespace RDFInternal = ROOT::Internal::RDF;
 
-using HeadNode_t = ::ROOT::RDF::RResultPtr<RInterface<RLoopManager, void>>;
-HeadNode_t CreateSnapshotRDF(const ColumnNames_t &validCols,
-                            std::string_view treeName,
-                            std::string_view fileName,
-                            bool isLazy,
-                            RLoopManager &loopManager,
-                            std::unique_ptr<RDFInternal::RActionBase> actionPtr);
+ROOT::RDF::RResultPtr<RInterface<RLoopManager<TTree>, void>>
+CreateSnapshotRDF(const ColumnNames_t &validCols, std::string_view treeName, std::string_view fileName, bool isLazy,
+                  RLoopManagerBase &loopManager, std::unique_ptr<RDFInternal::RActionBase> actionPtr);
 
 std::string DemangleTypeIdName(const std::type_info &typeInfo);
 
@@ -254,10 +250,10 @@ void BookFilterJit(const std::shared_ptr<RJittedFilter> &jittedFilter, std::shar
                    const std::map<std::string, std::string> &aliasMap, const ColumnNames_t &branches,
                    const RDFInternal::RBookedCustomColumns &customCols, TTree *tree, RDataSource *ds);
 
-std::shared_ptr<RJittedCustomColumn> BookDefineJit(std::string_view name, std::string_view expression, RLoopManager &lm,
-                                                   RDataSource *ds, const RDFInternal::RBookedCustomColumns &customCols,
-                                                   const ColumnNames_t &branches,
-                                                   std::shared_ptr<RNodeBase> *prevNodeOnHeap);
+std::shared_ptr<RJittedCustomColumn>
+BookDefineJit(std::string_view name, std::string_view expression, RLoopManagerBase &lm, RDataSource *ds,
+              const RDFInternal::RBookedCustomColumns &customCols, const ColumnNames_t &branches,
+              std::shared_ptr<RNodeBase> *prevNodeOnHeap);
 
 std::string JitBuildAction(const ColumnNames_t &bl, std::shared_ptr<RDFDetail::RNodeBase> *prevNode,
                            const std::type_info &art, const std::type_info &at, void *rOnHeap, TTree *tree,
@@ -289,7 +285,7 @@ bool AtLeastOneEmptyString(const std::vector<std::string_view> strings);
 /// This works for RLoopManager nodes as well as filters and ranges.
 std::shared_ptr<RNodeBase> UpcastNode(std::shared_ptr<RNodeBase> ptr);
 
-ColumnNames_t GetValidatedColumnNames(RLoopManager &lm, const unsigned int nColumns, const ColumnNames_t &columns,
+ColumnNames_t GetValidatedColumnNames(RLoopManagerBase &lm, const unsigned int nColumns, const ColumnNames_t &columns,
                                       const ColumnNames_t &validCustomColumns, RDataSource *ds);
 
 std::vector<std::string> GetValidatedArgTypes(const ColumnNames_t &colNames, const RBookedCustomColumns &customColumns,
@@ -382,7 +378,7 @@ void JitFilterHelper(F &&f, const ColumnNames_t &cols, std::string_view name,
 }
 
 template <typename F>
-void JitDefineHelper(F &&f, const ColumnNames_t &cols, std::string_view name, RLoopManager *lm,
+void JitDefineHelper(F &&f, const ColumnNames_t &cols, std::string_view name, RLoopManagerBase *lm,
                      std::weak_ptr<RJittedCustomColumn> *wkJittedCustomCol,
                      RDFInternal::RBookedCustomColumns *customColumns, std::shared_ptr<RNodeBase> *prevNodeOnHeap)
 {
@@ -553,7 +549,11 @@ ColumnNames_t FindUnknownColumns(const ColumnNames_t &requiredCols, const Column
 bool IsInternalColumn(std::string_view colName);
 
 /// Returns the list of Filters defined in the whole graph
-std::vector<std::string> GetFilterNames(const std::shared_ptr<RLoopManager> &loopManager);
+template <typename T>
+std::vector<std::string> GetFilterNames(const std::shared_ptr<RLoopManager<T>> &loopManager)
+{
+   return loopManager->GetFiltersNames();
+}
 
 /// Returns the list of Filters defined in the branch
 template <typename NodeType>

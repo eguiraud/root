@@ -22,14 +22,14 @@ protected:
 
 private:
    RDataFrame fTdf;
-   RInterface<RLoopManager> DefineAns()
+   RInterface<RLoopManager<TTree>> DefineAns()
    {
       return fTdf.Define("ans", []() { return 42; });
    }
 
 protected:
    RDFSnapshot() : fTdf(nEvents), tdf(DefineAns()) {}
-   RInterface<RLoopManager> tdf;
+   RInterface<RLoopManager<TTree>> tdf;
 };
 
 #ifdef R__USE_IMT
@@ -48,14 +48,14 @@ protected:
 private:
    TIMTEnabler fIMTEnabler;
    RDataFrame fTdf;
-   RInterface<RLoopManager> DefineAns()
+   RInterface<RLoopManager<TTree>> DefineAns()
    {
       return fTdf.Define("ans", []() { return 42; });
    }
 
 protected:
    RDFSnapshotMT() : fIMTEnabler(kNSlots), fTdf(kNEvents), tdf(DefineAns()) {}
-   RInterface<RLoopManager> tdf;
+   RInterface<RLoopManager<TTree>> tdf;
 };
 #endif // R__USE_IMT
 
@@ -165,7 +165,7 @@ TEST_F(RDFSnapshot, Snapshot_nocolumnmatch)
    gSystem->Unlink(fname);
 }
 
-void TestSnapshotUpdate(RInterface<RLoopManager> &tdf, const std::string &outfile, const std::string &tree1,
+void TestSnapshotUpdate(RInterface<RLoopManager<TTree>> &tdf, const std::string &outfile, const std::string &tree1,
                         const std::string &tree2, bool overwriteIfExists)
 {
    // test snapshotting two trees to the same file opened in "UPDATE" mode
@@ -225,7 +225,7 @@ TEST_F(RDFSnapshot, Snapshot_update_overwrite)
    TestSnapshotUpdate(tdf, "snap_update_overwrite.root", "t", "t", true);
 }
 
-void test_snapshot_options(RInterface<RLoopManager> &tdf)
+void test_snapshot_options(RInterface<RLoopManager<TTree>> &tdf)
 {
    RSnapshotOptions opts;
    opts.fAutoFlush = 10;
@@ -262,7 +262,7 @@ TEST_F(RDFSnapshot, Snapshot_action_with_options)
    test_snapshot_options(tdf);
 }
 
-void checkSnapshotArrayFile(RResultPtr<RInterface<RLoopManager>> &df, unsigned int kNEvents)
+void checkSnapshotArrayFile(RResultPtr<RInterface<RLoopManager<TTree>>> &df, unsigned int kNEvents)
 {
    // fixedSizeArr and varSizeArr are RResultPtr<vector<vector<T>>>
    auto fixedSizeArr = df->Take<RVec<float>>("fixedSizeArr");
@@ -831,7 +831,7 @@ TEST(RDFSnapshotMore, ManyTasksPerThread)
    ROOT::DisableImplicitMT();
 }
 
-void checkSnapshotArrayFileMT(RResultPtr<RInterface<RLoopManager>> &df, unsigned int kNEvents)
+void checkSnapshotArrayFileMT(RResultPtr<RInterface<RLoopManager<TTree>>> &df, unsigned int kNEvents)
 {
    // fixedSizeArr and varSizeArr are RResultPtr<vector<vector<T>>>
    auto fixedSizeArr = df->Take<RVec<float>>("fixedSizeArr");

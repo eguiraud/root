@@ -48,7 +48,7 @@ namespace Detail {
 namespace RDF {
 class RCustomColumnBase;
 class RFilterBase;
-class RLoopManager;
+class RLoopManagerBase;
 class RRangeBase;
 } // namespace RDF
 } // namespace Detail
@@ -326,12 +326,9 @@ namespace RDF {
 // the one in the vector
 class RActionBase;
 
-HeadNode_t CreateSnapshotRDF(const ColumnNames_t &validCols,
-                            std::string_view treeName,
-                            std::string_view fileName,
-                            bool isLazy,
-                            RLoopManager &loopManager,
-                            std::unique_ptr<RDFInternal::RActionBase> actionPtr)
+ROOT::RDF::RResultPtr<RInterface<RLoopManager<TTree>, void>>
+CreateSnapshotRDF(const ColumnNames_t &validCols, std::string_view treeName, std::string_view fileName, bool isLazy,
+                  RLoopManagerBase &loopManager, std::unique_ptr<RDFInternal::RActionBase> actionPtr)
 {
    // create new RDF
    ::TDirectory::TContext ctxt;
@@ -522,11 +519,6 @@ bool IsInternalColumn(std::string_view colName)
    return goodPrefix && '_' == colName.back();                 // also ends with '_'
 }
 
-std::vector<std::string> GetFilterNames(const std::shared_ptr<RLoopManager> &loopManager)
-{
-   return loopManager->GetFiltersNames();
-}
-
 std::string PrettyPrintAddr(const void *const addr)
 {
    std::stringstream s;
@@ -581,10 +573,10 @@ void BookFilterJit(const std::shared_ptr<RJittedFilter> &jittedFilter,
 }
 
 // Jit a Define call
-std::shared_ptr<RJittedCustomColumn> BookDefineJit(std::string_view name, std::string_view expression, RLoopManager &lm,
-                                                   RDataSource *ds, const RDFInternal::RBookedCustomColumns &customCols,
-                                                   const ColumnNames_t &branches,
-                                                   std::shared_ptr<RNodeBase> *upcastNodeOnHeap)
+std::shared_ptr<RJittedCustomColumn>
+BookDefineJit(std::string_view name, std::string_view expression, RLoopManagerBase &lm, RDataSource *ds,
+              const RDFInternal::RBookedCustomColumns &customCols, const ColumnNames_t &branches,
+              std::shared_ptr<RNodeBase> *upcastNodeOnHeap)
 {
    const auto &aliasMap = lm.GetAliasMap();
    auto *const tree = lm.GetTree();
@@ -612,7 +604,7 @@ std::shared_ptr<RJittedCustomColumn> BookDefineJit(std::string_view name, std::s
    // - lm is the loop manager, and if that goes out of scope jitting does not happen at all (i.e. will always be valid)
    // - jittedCustomColumn: heap-allocated weak_ptr that will be deleted by JitDefineHelper after usage
    // - customColumnsAddr: heap-allocated, will be deleted by JitDefineHelper after usage
-   defineInvocation << "}, \"" << name << "\", reinterpret_cast<ROOT::Detail::RDF::RLoopManager*>("
+   defineInvocation << "}, \"" << name << "\", reinterpret_cast<ROOT::Detail::RDF::RLoopManagerBase*>("
                     << PrettyPrintAddr(&lm)
                     << "), reinterpret_cast<std::weak_ptr<ROOT::Detail::RDF::RJittedCustomColumn>*>("
                     << PrettyPrintAddr(MakeWeakOnHeap(jittedCustomColumn))
@@ -693,7 +685,7 @@ std::shared_ptr<RNodeBase> UpcastNode(std::shared_ptr<RNodeBase> ptr)
 /// * check that selected column names refer to valid branches, custom columns or datasource columns (throw if not)
 /// * replace column names from aliases by the actual column name
 /// Return the list of selected column names.
-ColumnNames_t GetValidatedColumnNames(RLoopManager &lm, const unsigned int nColumns, const ColumnNames_t &columns,
+ColumnNames_t GetValidatedColumnNames(RLoopManagerBase &lm, const unsigned int nColumns, const ColumnNames_t &columns,
                                       const ColumnNames_t &validCustomColumns, RDataSource *ds)
 {
    const auto &defaultColumns = lm.GetDefaultColumnNames();

@@ -40,7 +40,7 @@ namespace RDF {
 using ROOT::RDF::RResultPtr;
 // Fwd decl for RResultPtr
 template <typename T>
-RResultPtr<T> MakeResultPtr(const std::shared_ptr<T> &r, RLoopManager &df,
+RResultPtr<T> MakeResultPtr(const std::shared_ptr<T> &r, RLoopManagerBase &df,
                             std::shared_ptr<ROOT::Internal::RDF::RActionBase> actionPtr);
 
 // Fwd decl for GetMergeableValue
@@ -85,7 +85,7 @@ class RResultPtr {
    friend class RResultPtr;
 
    template <typename T1>
-   friend RResultPtr<T1> RDFDetail::MakeResultPtr(const std::shared_ptr<T1> &, ::ROOT::Detail::RDF::RLoopManager &,
+   friend RResultPtr<T1> RDFDetail::MakeResultPtr(const std::shared_ptr<T1> &, ::ROOT::Detail::RDF::RLoopManagerBase &,
                                                   std::shared_ptr<RDFInternal::RActionBase>);
    template <class T1, class T2>
    friend bool operator==(const RResultPtr<T1> &lhs, const RResultPtr<T2> &rhs);
@@ -121,7 +121,7 @@ class RResultPtr {
 
    /// Non-owning pointer to the RLoopManager at the root of this computation graph.
    /// The RLoopManager is guaranteed to be always in scope if fLoopManager is not a nullptr.
-   RDFDetail::RLoopManager *fLoopManager = nullptr;
+   RDFDetail::RLoopManagerBase *fLoopManager = nullptr;
    SPT_t fObjPtr; ///< Shared pointer encapsulating the wrapped result
    /// Owning pointer to the action that will produce this result.
    /// Ownership is shared with other copies of this ResultPtr.
@@ -140,7 +140,7 @@ class RResultPtr {
       return fObjPtr.get();
    }
 
-   RResultPtr(std::shared_ptr<T> objPtr, RDFDetail::RLoopManager *lm,
+   RResultPtr(std::shared_ptr<T> objPtr, RDFDetail::RLoopManagerBase *lm,
               std::shared_ptr<RDFInternal::RActionBase> actionPtr)
       : fLoopManager(lm), fObjPtr(std::move(objPtr)), fActionPtr(std::move(actionPtr))
    {
@@ -351,7 +351,7 @@ namespace RDF {
 /// This overload is invoked by non-jitted actions, as they have access to RAction before constructing RResultPtr.
 template <typename T>
 RResultPtr<T>
-MakeResultPtr(const std::shared_ptr<T> &r, RLoopManager &lm, std::shared_ptr<RDFInternal::RActionBase> actionPtr)
+MakeResultPtr(const std::shared_ptr<T> &r, RLoopManagerBase &lm, std::shared_ptr<RDFInternal::RActionBase> actionPtr)
 {
    return RResultPtr<T>(r, &lm, std::move(actionPtr));
 }

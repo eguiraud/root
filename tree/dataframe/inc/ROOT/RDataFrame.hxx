@@ -39,7 +39,7 @@ namespace RDFDetail = ROOT::Detail::RDF;
 namespace RDFInternal = ROOT::Internal::RDF;
 namespace TTraits = ROOT::TypeTraits;
 
-class RDataFrame : public ROOT::RDF::RInterface<RDFDetail::RLoopManager> {
+class RDataFrame : public ROOT::RDF::RInterface<RDFDetail::RLoopManager<TTree>> {
 public:
    using ColumnNames_t = RDFDetail::ColumnNames_t;
    RDataFrame(std::string_view treeName, std::string_view filenameglob, const ColumnNames_t &defaultBranches = {});

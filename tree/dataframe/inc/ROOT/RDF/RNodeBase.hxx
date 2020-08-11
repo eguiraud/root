@@ -33,19 +33,19 @@ class GraphNode;
 namespace Detail {
 namespace RDF {
 
-class RLoopManager;
+class RLoopManagerBase;
 
 /// Base class for non-leaf nodes of the computational graph.
 /// It only exposes the bare minimum interface required to work as a generic part of the computation graph.
 /// RDataFrames and results of transformations can be cast to this type via ROOT::RDF::RNode (or ROOT.RDF.AsRNode in PyROOT).
 class RNodeBase {
 protected:
-   RLoopManager *fLoopManager;
+   RLoopManagerBase *fLoopManager;
    unsigned int fNChildren{0};      ///< Number of nodes of the functional graph hanging from this object
    unsigned int fNStopsReceived{0}; ///< Number of times that a children node signaled to stop processing entries.
 
 public:
-   RNodeBase(RLoopManager *lm = nullptr) : fLoopManager(lm) {}
+   RNodeBase(RLoopManagerBase *lm = nullptr) : fLoopManager(lm) {}
    virtual ~RNodeBase() {}
    virtual bool CheckFilters(unsigned int, Long64_t) = 0;
    virtual void Report(ROOT::RDF::RCutFlowReport &) const = 0;
@@ -61,7 +61,7 @@ public:
       fNStopsReceived = 0;
    }
 
-   virtual RLoopManager *GetLoopManagerUnchecked() { return fLoopManager; }
+   virtual RLoopManagerBase *GetLoopManagerUnchecked() { return fLoopManager; }
 };
 } // ns RDF
 } // ns Detail

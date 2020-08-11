@@ -11,9 +11,9 @@
 #include "ROOT/RDF/RRangeBase.hxx"
 
 using ROOT::Detail::RDF::RRangeBase;
-using ROOT::Detail::RDF::RLoopManager;
+using ROOT::Detail::RDF::RLoopManagerBase;
 
-RRangeBase::RRangeBase(RLoopManager *implPtr, unsigned int start, unsigned int stop, unsigned int stride,
+RRangeBase::RRangeBase(RLoopManagerBase *implPtr, unsigned int start, unsigned int stop, unsigned int stride,
                        const unsigned int nSlots)
    : RNodeBase(implPtr), fStart(start), fStop(stop), fStride(stride), fNSlots(nSlots) { }
 

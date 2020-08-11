@@ -113,7 +113,7 @@ private:
 
    ////////////////////////////////////////////////////////////////////////////
    /// \brief Starting from the root node, prints the entire graph.
-   std::string RepresentGraph(RLoopManager *rLoopManager);
+   std::string RepresentGraph(RLoopManagerBase *rLoopManager);
 
    ////////////////////////////////////////////////////////////////////////////
    /// \brief Starting from a Filter or Range, prints the branch it belongs to
@@ -135,7 +135,7 @@ private:
       if (!loopManager)
          throw std::runtime_error("Something went wrong");
 
-      if (std::is_same<T, RInterface<RLoopManager, void>>::value) {
+      if (std::is_same<T, RInterface<RLoopManager<void>, void>>::value) {
          return RepresentGraph(loopManager);
       }
 

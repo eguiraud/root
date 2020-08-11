@@ -27,7 +27,7 @@ namespace Detail {
 namespace RDF {
 namespace RDFGraphDrawing = ROOT::Internal::RDF::GraphDrawing;
 
-class RLoopManager;
+class RLoopManagerBase;
 
 class RRangeBase : public RNodeBase {
 protected:
@@ -43,7 +43,7 @@ protected:
    void ResetCounters();
 
 public:
-   RRangeBase(RLoopManager *implPtr, unsigned int start, unsigned int stop, unsigned int stride,
+   RRangeBase(RLoopManagerBase *implPtr, unsigned int start, unsigned int stop, unsigned int stride,
               const unsigned int nSlots);
 
    RRangeBase &operator=(const RRangeBase &) = delete;

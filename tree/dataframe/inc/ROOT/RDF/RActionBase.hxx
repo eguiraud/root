@@ -22,7 +22,7 @@ namespace ROOT {
 
 namespace Detail {
 namespace RDF {
-class RLoopManager;
+class RLoopManagerBase;
 class RCustomColumnBase;
 class RMergeableValueBase;
 } // namespace RDF
@@ -46,7 +46,7 @@ class RActionBase {
 protected:
    /// A raw pointer to the RLoopManager at the root of this functional graph.
    /// Never null: children nodes have shared ownership of parent nodes in the graph.
-   RLoopManager *fLoopManager;
+   RLoopManagerBase *fLoopManager;
 
 private:
    const unsigned int fNSlots; ///< Number of thread slots used by this node.
@@ -56,14 +56,14 @@ private:
    RBookedCustomColumns fCustomColumns;
 
 public:
-   RActionBase(RLoopManager *lm, const ColumnNames_t &colNames, RBookedCustomColumns &&customColumns);
+   RActionBase(RLoopManagerBase *lm, const ColumnNames_t &colNames, RBookedCustomColumns &&customColumns);
    RActionBase(const RActionBase &) = delete;
    RActionBase &operator=(const RActionBase &) = delete;
    virtual ~RActionBase();
 
    const ColumnNames_t &GetColumnNames() const { return fColumnNames; }
    RBookedCustomColumns &GetCustomColumns() { return fCustomColumns; }
-   RLoopManager *GetLoopManager() { return fLoopManager; }
+   RLoopManagerBase *GetLoopManager() { return fLoopManager; }
    unsigned int GetNSlots() const { return fNSlots; }
    virtual void Run(unsigned int slot, Long64_t entry) = 0;
    virtual void Initialize() = 0;

@@ -16,9 +16,9 @@
 #include "TError.h"
 
 using ROOT::Internal::RDF::RJittedAction;
-using ROOT::Detail::RDF::RLoopManager;
+using ROOT::Detail::RDF::RLoopManagerBase;
 
-RJittedAction::RJittedAction(RLoopManager &lm) : RActionBase(&lm, {}, ROOT::Internal::RDF::RBookedCustomColumns{}) { }
+RJittedAction::RJittedAction(RLoopManagerBase &lm) : RActionBase(&lm, {}, ROOT::Internal::RDF::RBookedCustomColumns{}) { }
 
 void RJittedAction::Run(unsigned int slot, Long64_t entry)
 {

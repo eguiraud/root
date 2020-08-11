@@ -63,7 +63,7 @@ std::string GraphCreatorHelper::RepresentGraph(ROOT::RDataFrame &rDataFrame)
    return RepresentGraph(loopManager);
 }
 
-std::string GraphCreatorHelper::RepresentGraph(RLoopManager *loopManager)
+std::string GraphCreatorHelper::RepresentGraph(RLoopManagerBase *loopManager)
 {
 
    auto actions = loopManager->GetAllActions();
