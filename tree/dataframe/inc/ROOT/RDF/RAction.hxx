@@ -75,12 +75,12 @@ void InitColumnReaders(unsigned int slot, std::vector<RTypeErasedColumnValue> &v
    using expander = int[];
 
    // Construct the column readers
-   (void)expander{
+   expander{
       (values.emplace_back(MakeColumnReader<ColTypes>(isTmpColumn[S] ? customColMap.at(bn[S]).get() : nullptr)), 0)...,
       0};
 
    // Hack to expand a parameter pack without c++17 fold expressions. Call Init on each column reader.
-   (void)expander{
+   expander{
       (values[S].Cast<ColTypes>()->Init(slot, isTmpColumn[S] ? customColMap.at(bn.at(S)).get() : nullptr, r, bn.at(S)),
        0)...,
       0};
