@@ -302,8 +302,9 @@ std::vector<std::string> ReplaceDotWithUnderscore(const std::vector<std::string>
    return newColNames;
 }
 
-void InterpreterDeclare(const std::string &code)
+void InterpreterDeclare(const std::string &_code)
 {
+   const auto code = "#pragma cling optimize(3)\n" + _code;
    if (!gInterpreter->Declare(code.c_str())) {
       const auto msg =
          "\nRDataFrame: An error occurred during just-in-time compilation. The lines above might indicate the cause of "
@@ -312,8 +313,9 @@ void InterpreterDeclare(const std::string &code)
    }
 }
 
-Long64_t InterpreterCalc(const std::string &code, const std::string &context)
+Long64_t InterpreterCalc(const std::string &_code, const std::string &context)
 {
+   const auto code = "#pragma cling optimize(3)\n" + _code;
    TInterpreter::EErrorCode errorCode(TInterpreter::kNoError);
    auto res = gInterpreter->Calc(code.c_str(), &errorCode);
    if (errorCode != TInterpreter::EErrorCode::kNoError) {
