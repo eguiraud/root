@@ -547,3 +547,18 @@ TEST(RDataFrameInterface, GetColumnTypeOfAlias)
       EXPECT_EQ(df.GetColumnType("y"), "Int_t");
    }
 }
+
+
+// #var is a convenience alias for __rdf_sizeof_var.
+TEST(RDataFrameInterface, ShortSyntaxForCollectionSizes)
+{
+   auto df = ROOT::RDataFrame(1).Define("__rdf_sizeof_x", [] { return 42; });
+   auto m1 = df.Max<int>("#x");
+   auto m2 = df.Max("#x");
+   auto m3 = df.Define("y", [] (int xs) { return xs; }, {"#x"}).Max<int>("y");
+   auto m4 = df.Filter("2 + pow(#x, 2) > 0").Max<int>("#x");
+   EXPECT_EQ(*m1, 42);
+   EXPECT_EQ(*m2, 42);
+   EXPECT_EQ(*m3, 42);
+   EXPECT_EQ(*m4, 42);
+}
