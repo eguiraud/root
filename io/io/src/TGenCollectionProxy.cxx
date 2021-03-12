@@ -1049,6 +1049,8 @@ void* TGenCollectionProxy::At(UInt_t idx)
             fEnv->fIdx = idx;
             return &(fEnv->fLastValueVecBool);
          }
+      // intentional fall through
+      case ROOT::kROOTRVec:
          fEnv->fIdx = idx;
          switch( idx ) {
          case 0:
