@@ -2301,8 +2301,8 @@ private:
       const auto validColumnNames = GetValidatedColumnNames(realNColumns, columns);
       const unsigned int nSlots = fLoopManager->GetNSlots();
 
-      auto tree = fLoopManager->GetTree();
-      auto helperArgOnHeap = RDFInternal::MakeWeakOnHeap(helperArg);
+      auto *tree = fLoopManager->GetTree();
+      auto *helperArgOnHeap = RDFInternal::MakeWeakOnHeap(helperArg);
 
       auto upcastNodeOnHeap = RDFInternal::MakeSharedOnHeap(RDFInternal::UpcastNode(fProxiedPtr));
       using BaseNodeType_t = typename std::remove_pointer<decltype(upcastNodeOnHeap)>::type::element_type;
